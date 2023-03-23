@@ -5,8 +5,8 @@ from starkware.cairo.common.cairo_secp.bigint import (
     UnreducedBigInt5,
     bigint_mul,
 )
-from src.bn254.fq import is_zero, verify_zero5, fq_bigint3
-from src.bn254.curve import P0, P1, P2
+from garaga.bn254.fq import is_zero, verify_zero5, fq_bigint3
+from garaga.bn254.curve import P0, P1, P2
 from starkware.cairo.common.registers import get_fp_and_pc
 
 // Represents a point on the elliptic curve.

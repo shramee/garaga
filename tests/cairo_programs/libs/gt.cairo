@@ -1,10 +1,10 @@
 from starkware.cairo.common.cairo_secp.bigint import BigInt3, nondet_bigint3, bigint_mul
-from src.bn254.g1 import G1Point
-from src.bn254.g2 import g2, G2Point, G2
-from src.bn254.fq import fq_zero, fq_bigint3, is_zero
-from src.bn254.towers.e12 import E12, e12, nondet_E12
-from src.bn254.towers.e6 import e6, E6
-from src.bn254.towers.e2 import e2, E2
+from garaga.bn254.g1 import G1Point
+from garaga.bn254.g2 import g2, G2Point, G2
+from garaga.bn254.fq import fq_zero, fq_bigint3, is_zero
+from garaga.bn254.towers.e12 import E12, e12, nondet_E12
+from garaga.bn254.towers.e6 import e6, E6
+from garaga.bn254.towers.e2 import e2, E2
 
 struct GTPoint {
     x: E12,

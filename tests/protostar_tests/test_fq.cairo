@@ -6,7 +6,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from tests.cairo_programs.libs.fq_poly import fq_poly, Polyfelt
 from tests.cairo_programs.libs.fq_uint256 import fq
 from starkware.cairo.common.uint256 import Uint256
-from src.bn254.curve import P_low, P_high
+from garaga.bn254.curve import P_low, P_high
 
 from tests.cairo_programs.libs.u255 import u255, Uint512
 

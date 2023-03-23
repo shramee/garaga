@@ -1,5 +1,5 @@
-from src.bn254.towers.e2 import e2, E2
-from src.bn254.towers.e6 import e6, E6
+from garaga.bn254.towers.e2 import e2, E2
+from garaga.bn254.towers.e6 import e6, E6
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_secp.bigint import (
     BigInt3,
@@ -10,8 +10,8 @@ from starkware.cairo.common.cairo_secp.bigint import (
     bigint_to_uint256,
     uint256_to_bigint,
 )
-from src.bn254.fq import fq_bigint3, is_zero, verify_zero5
-from src.bn254.g1 import G1Point
+from garaga.bn254.fq import fq_bigint3, is_zero, verify_zero5
+from garaga.bn254.g1 import G1Point
 from starkware.cairo.common.registers import get_fp_and_pc
 
 // A G2 element (elliptic curve point) as two Fq2 coordinates with uint256 Fq elements.

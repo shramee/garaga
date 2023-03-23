@@ -1,8 +1,8 @@
 from starkware.cairo.common.registers import get_label_location
-from src.bn254.g1 import G1Point
-from src.bn254.g2 import G2Point, g2
-from src.bn254.gt import GTPoint, gt
-from src.bn254.towers.e12 import E12, e12
+from garaga.bn254.g1 import G1Point
+from garaga.bn254.g2 import G2Point, g2
+from garaga.bn254.gt import GTPoint, gt
+from garaga.bn254.towers.e12 import E12, e12
 
 const ate_loop_count = 29793968203157093288;
 const log_ate_loop_count = 63;

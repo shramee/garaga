@@ -13,7 +13,7 @@ from starkware.cairo.common.math_cmp import is_le, is_nn
 from starkware.cairo.common.registers import get_ap, get_fp_and_pc
 from starkware.cairo.common.cairo_secp.constants import BASE
 from tests.cairo_programs.libs.u255 import u255, Uint256, Uint512, Uint768
-from src.bn254.curve import (
+from garaga.bn254.curve import (
     P_low,
     P_high,
     P2_low,
@@ -31,7 +31,7 @@ from src.bn254.curve import (
 from tests.cairo_programs.libs.uint384 import uint384_lib, Uint384
 from starkware.cairo.common.uint256 import SHIFT, uint256_le, uint256_lt, assert_uint256_le
 from tests.cairo_programs.libs.uint256_improvements import uint256_unsigned_div_rem
-from src.utils import get_felt_bitlength, pow2, felt_divmod_no_input_check
+from garaga.utils import get_felt_bitlength, pow2, felt_divmod_no_input_check
 from starkware.cairo.common.cairo_secp.bigint import (
     BigInt3,
     uint256_to_bigint,
@@ -41,7 +41,7 @@ from starkware.cairo.common.cairo_secp.bigint import (
     nondet_bigint3,
 )
 
-from src.bn254.fq import verify_zero5
+from garaga.bn254.fq import verify_zero5
 
 namespace fq {
     // Computes a + b modulo bn254 prime

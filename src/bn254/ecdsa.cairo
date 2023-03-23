@@ -5,8 +5,8 @@
 //   G = (0x1, 0x2)
 
 from starkware.cairo.common.cairo_secp.bigint import BASE, BigInt3, bigint_mul, nondet_bigint3
-from src.bn254.curve import N0, N1, N2
-from src.bn254.g1 import G1Point, g1
+from garaga.bn254.curve import N0, N1, N2
+from garaga.bn254.g1 import G1Point, g1
 
 from starkware.cairo.common.math import assert_nn_le, assert_not_zero
 

@@ -12,7 +12,7 @@ from starkware.cairo.common.cairo_secp.bigint import (
     nondet_bigint3 as nd,
 )
 from starkware.cairo.common.registers import get_fp_and_pc
-from src.bn254.curve import P0, P1, P2
+from garaga.bn254.curve import P0, P1, P2
 
 const SHIFT_MIN_BASE = SHIFT - BASE;
 const SHIFT_MIN_P2 = SHIFT - P2 - 1;

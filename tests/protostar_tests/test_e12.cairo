@@ -4,10 +4,10 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.registers import get_fp_and_pc
 
-from src.bn254.towers.e12 import E12, e12
-from src.bn254.towers.e6 import E6, e6
-from src.bn254.towers.e2 import E2, e2
-from src.bn254.fq import BigInt3
+from garaga.bn254.towers.e12 import E12, e12
+from garaga.bn254.towers.e6 import E6, e6
+from garaga.bn254.towers.e2 import E2, e2
+from garaga.bn254.fq import BigInt3
 
 @external
 func __setup__() {

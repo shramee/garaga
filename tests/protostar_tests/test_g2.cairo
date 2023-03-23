@@ -3,7 +3,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 
 from starkware.cairo.common.cairo_secp.bigint import BigInt3, uint256_to_bigint, bigint_to_uint256
-from src.bn254.g2 import get_g2_generator, get_n_g2_generator, g2, G2Point
+from garaga.bn254.g2 import get_g2_generator, get_n_g2_generator, g2, G2Point
 
 @external
 func __setup__() {

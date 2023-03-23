@@ -3,7 +3,7 @@
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 from tests.cairo_programs.libs.fq_uint256 import fq
-from src.bn254.fq import fq_bigint3
+from garaga.bn254.fq import fq_bigint3
 
 from starkware.cairo.common.cairo_secp.bigint import (
     BigInt3,

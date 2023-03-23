@@ -1,4 +1,4 @@
-from src.bn254.fq import fq_bigint3, BigInt3, fq_eq_zero, add_bigint3
+from garaga.bn254.fq import fq_bigint3, BigInt3, fq_eq_zero, add_bigint3
 from starkware.cairo.common.registers import get_fp_and_pc
 
 struct E2 {

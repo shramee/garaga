@@ -1,6 +1,6 @@
-from src.bn254.towers.e6 import e6, E6
-from src.bn254.towers.e2 import e2, E2
-from src.bn254.fq import fq_bigint3, BigInt3
+from garaga.bn254.towers.e6 import e6, E6
+from garaga.bn254.towers.e2 import e2, E2
+from garaga.bn254.fq import fq_bigint3, BigInt3
 from starkware.cairo.common.registers import get_fp_and_pc
 
 struct E12 {

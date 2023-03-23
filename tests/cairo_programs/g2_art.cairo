@@ -1,12 +1,12 @@
 %builtins range_check
 
-from src.bn254.towers.e12 import E12, e12
-from src.bn254.towers.e6 import E6, e6
-from src.bn254.towers.e2 import E2, e2
-from src.bn254.g1 import G1Point, g1
-from src.bn254.g2 import G2Point, g2
-from src.bn254.pairing import pair, miller_loop
-from src.bn254.fq import BigInt3
+from garaga.bn254.towers.e12 import E12, e12
+from garaga.bn254.towers.e6 import E6, e6
+from garaga.bn254.towers.e2 import E2, e2
+from garaga.bn254.g1 import G1Point, g1
+from garaga.bn254.g2 import G2Point, g2
+from garaga.bn254.pairing import pair, miller_loop
+from garaga.bn254.fq import BigInt3
 from starkware.cairo.common.registers import get_fp_and_pc
 
 func main{range_check_ptr}() {

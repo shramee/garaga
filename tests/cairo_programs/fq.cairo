@@ -4,8 +4,8 @@ from starkware.cairo.common.cairo_secp.constants import BASE
 from starkware.cairo.common.uint256 import SHIFT
 from starkware.cairo.common.cairo_secp.bigint import BigInt3, UnreducedBigInt5
 from starkware.cairo.common.registers import get_fp_and_pc
-from src.bn254.fq import nondet_bigint3, add_bigint3, fq_bigint3, sub_P, add_P
-from src.bn254.curve import P0, P1, P2
+from garaga.bn254.fq import nondet_bigint3, add_bigint3, fq_bigint3, sub_P, add_P
+from garaga.bn254.curve import P0, P1, P2
 
 func main{output_ptr: felt*, range_check_ptr}() {
     alloc_locals;

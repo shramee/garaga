@@ -1,8 +1,8 @@
 %builtins range_check
 
-from src.bn254.towers.e12 import E12, e12
-from src.bn254.towers.e6 import E6, e6
-from src.bn254.towers.e2 import E2, e2
+from garaga.bn254.towers.e12 import E12, e12
+from garaga.bn254.towers.e6 import E6, e6
+from garaga.bn254.towers.e2 import E2, e2
 
 func main{range_check_ptr}() {
     alloc_locals;

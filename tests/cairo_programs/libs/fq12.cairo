@@ -5,7 +5,7 @@ from tests.cairo_programs.libs.fq_uint256 import fq as fq_lib
 from tests.cairo_programs.libs.uint384_extension import uint384_extension_lib, Uint768
 from tests.cairo_programs.libs.uint384 import uint384_lib, Uint384
 from starkware.cairo.common.cairo_secp.bigint import BigInt3
-from src.bn254.fq import verify_zero3
+from garaga.bn254.fq import verify_zero3
 
 struct FQ12 {
     e0: Uint256,
