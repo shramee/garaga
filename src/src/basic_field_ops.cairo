@@ -1,7 +1,7 @@
 use core::circuit::{
     CircuitElement, CircuitElement as CE, CircuitInput, CircuitInput as CI, CircuitInputs,
     CircuitModulus, CircuitOutputsTrait, EvalCircuitTrait, circuit_add, circuit_inverse,
-    circuit_mul, circuit_sub, u384,
+    circuit_mul, circuit_sub, u384, u96,
 };
 use core::num::traits::Zero;
 use corelib_imports::bounded_int::upcast;
@@ -244,7 +244,6 @@ pub fn eval_and_hash_E12D_u288_transcript(
     return (s, evals);
 }
 
-
 #[inline(always)]
 pub fn eval_and_hash_E12D_u384_transcript(
     transcript: Span<E12D<u384>>, mut s: PoseidonState, z: u384,
@@ -345,4 +344,235 @@ pub fn eval_and_hash_E12D_u384_transcript(
         evals.append(f_of_z);
     }
     return (s, evals);
+}
+
+// --- Unreduced polynomial evaluation helpers ---
+//
+// Each number is treated as a polynomial in X = 2^96 with u96 limbs as coefficients.
+// "Unreduced" means we skip modular reduction and keep the full outer-product
+// representation so callers can verify the result via a Schwartz-Zippel identity check.
+
+// Extract the lower 3 limbs of a u384 as a u288.
+// Valid for BN254 field elements, which are always < p < 2^288 (limb3 == 0).
+#[inline(always)]
+fn u384_low3(a: u384) -> u288 {
+    u288 { limb0: a.limb0, limb1: a.limb1, limb2: a.limb2 }
+}
+
+// Element-wise addition of two [felt252; 9] outer-product arrays.
+#[inline(always)]
+fn add9(a: [felt252; 9], b: [felt252; 9]) -> [felt252; 9] {
+    let [a0, a1, a2, a3, a4, a5, a6, a7, a8] = a;
+    let [b0, b1, b2, b3, b4, b5, b6, b7, b8] = b;
+    [a0 + b0, a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8]
+}
+
+// Element-wise addition of two [felt252; 16] outer-product arrays.
+#[inline(always)]
+fn add16(a: [felt252; 16], b: [felt252; 16]) -> [felt252; 16] {
+    let [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15] = a;
+    let [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15] = b;
+    [
+        a0 + b0, a1 + b1, a2 + b2, a3 + b3, a4 + b4, a5 + b5, a6 + b6, a7 + b7, a8 + b8,
+        a9 + b9, a10 + b10, a11 + b11, a12 + b12, a13 + b13, a14 + b14, a15 + b15,
+    ]
+}
+
+// Multiply two u288 values without modular reduction.
+// Returns the 3x3 outer product of their u96 limbs cast to felt252.
+// Layout: result[3*i + j] = a.limb[i] * b.limb[j].
+// For any scalar x: sum_{i,j} result[3*i+j] * x^(i+j) = a(x) * b(x)
+// where a(x) = a.limb0 + a.limb1*x + a.limb2*x^2.
+#[inline(always)]
+pub fn unreduced_mul_u288(a: u288, b: u288) -> [felt252; 9] {
+    let (a0, a1, a2): (felt252, felt252, felt252) = (
+        a.limb0.into(), a.limb1.into(), a.limb2.into(),
+    );
+    let (b0, b1, b2): (felt252, felt252, felt252) = (
+        b.limb0.into(), b.limb1.into(), b.limb2.into(),
+    );
+    [a0 * b0, a0 * b1, a0 * b2, a1 * b0, a1 * b1, a1 * b2, a2 * b0, a2 * b1, a2 * b2]
+}
+
+// Multiply two u384 values without modular reduction.
+// Returns the 4x4 outer product of their u96 limbs cast to felt252.
+// Layout: result[4*i + j] = a.limb[i] * b.limb[j].
+// For any scalar x: sum_{i,j} result[4*i+j] * x^(i+j) = a(x) * b(x).
+#[inline(always)]
+pub fn unreduced_mul_u384(a: u384, b: u384) -> [felt252; 16] {
+    let (a0, a1, a2, a3): (felt252, felt252, felt252, felt252) = (
+        a.limb0.into(), a.limb1.into(), a.limb2.into(), a.limb3.into(),
+    );
+    let (b0, b1, b2, b3): (felt252, felt252, felt252, felt252) = (
+        b.limb0.into(), b.limb1.into(), b.limb2.into(), b.limb3.into(),
+    );
+    [
+        a0 * b0, a0 * b1, a0 * b2, a0 * b3, a1 * b0, a1 * b1, a1 * b2, a1 * b3, a2 * b0,
+        a2 * b1, a2 * b2, a2 * b3, a3 * b0, a3 * b1, a3 * b2, a3 * b3,
+    ]
+}
+
+// Evaluate E12D<u288> unreduced, accumulating per-term outer products.
+// z_powers[i] = z^(i+1) as u384 (limb3 must be 0 for BN254 field elements).
+// For any scalar x: evaluating the result gives f(x) = sum_i f.wi(x) * z^i(x).
+#[inline(always)]
+pub fn eval_e12d_u288(f: E12D<u288>, z_powers: Span<u384>) -> [felt252; 9] {
+    let one = u288 { limb0: 1, limb1: 0, limb2: 0 };
+    let mut acc = unreduced_mul_u288(f.w0, one);
+    acc = add9(acc, unreduced_mul_u288(f.w1, u384_low3(*z_powers.at(0))));
+    acc = add9(acc, unreduced_mul_u288(f.w2, u384_low3(*z_powers.at(1))));
+    acc = add9(acc, unreduced_mul_u288(f.w3, u384_low3(*z_powers.at(2))));
+    acc = add9(acc, unreduced_mul_u288(f.w4, u384_low3(*z_powers.at(3))));
+    acc = add9(acc, unreduced_mul_u288(f.w5, u384_low3(*z_powers.at(4))));
+    acc = add9(acc, unreduced_mul_u288(f.w6, u384_low3(*z_powers.at(5))));
+    acc = add9(acc, unreduced_mul_u288(f.w7, u384_low3(*z_powers.at(6))));
+    acc = add9(acc, unreduced_mul_u288(f.w8, u384_low3(*z_powers.at(7))));
+    acc = add9(acc, unreduced_mul_u288(f.w9, u384_low3(*z_powers.at(8))));
+    acc = add9(acc, unreduced_mul_u288(f.w10, u384_low3(*z_powers.at(9))));
+    acc = add9(acc, unreduced_mul_u288(f.w11, u384_low3(*z_powers.at(10))));
+    acc
+}
+
+// Evaluate E12D<u384> unreduced.
+// z_powers[i] = z^(i+1) as u384 (BLS12-381 field elements).
+#[inline(always)]
+pub fn eval_e12d_u384(f: E12D<u384>, z_powers: Span<u384>) -> [felt252; 16] {
+    let one = u384 { limb0: 1, limb1: 0, limb2: 0, limb3: 0 };
+    let mut acc = unreduced_mul_u384(f.w0, one);
+    acc = add16(acc, unreduced_mul_u384(f.w1, *z_powers.at(0)));
+    acc = add16(acc, unreduced_mul_u384(f.w2, *z_powers.at(1)));
+    acc = add16(acc, unreduced_mul_u384(f.w3, *z_powers.at(2)));
+    acc = add16(acc, unreduced_mul_u384(f.w4, *z_powers.at(3)));
+    acc = add16(acc, unreduced_mul_u384(f.w5, *z_powers.at(4)));
+    acc = add16(acc, unreduced_mul_u384(f.w6, *z_powers.at(5)));
+    acc = add16(acc, unreduced_mul_u384(f.w7, *z_powers.at(6)));
+    acc = add16(acc, unreduced_mul_u384(f.w8, *z_powers.at(7)));
+    acc = add16(acc, unreduced_mul_u384(f.w9, *z_powers.at(8)));
+    acc = add16(acc, unreduced_mul_u384(f.w10, *z_powers.at(9)));
+    acc = add16(acc, unreduced_mul_u384(f.w11, *z_powers.at(10)));
+    acc
+}
+
+// Evaluate a big_Q polynomial (Span<u288>) unreduced.
+// q[0] is the constant term; z_powers[i] = z^(i+1) as u384 (limb3 must be 0 for BN254).
+pub fn eval_big_Q_u288(q: Span<u288>, z_powers: Span<u384>) -> [felt252; 9] {
+    let one = u288 { limb0: 1, limb1: 0, limb2: 0 };
+    let mut acc = unreduced_mul_u288(*q.at(0), one);
+    let mut i: usize = 1;
+    let len = q.len();
+    while i < len {
+        acc = add9(acc, unreduced_mul_u288(*q.at(i), u384_low3(*z_powers.at(i - 1))));
+        i += 1;
+    };
+    acc
+}
+
+// Evaluate a big_Q polynomial (Span<u384>) unreduced.
+// q[0] is the constant term; z_powers[i] = z^(i+1) as u384 (BLS12-381 field elements).
+pub fn eval_big_Q_u384(q: Span<u384>, z_powers: Span<u384>) -> [felt252; 16] {
+    let one = u384 { limb0: 1, limb1: 0, limb2: 0, limb3: 0 };
+    let mut acc = unreduced_mul_u384(*q.at(0), one);
+    let mut i: usize = 1;
+    let len = q.len();
+    while i < len {
+        acc = add16(acc, unreduced_mul_u384(*q.at(i), *z_powers.at(i - 1)));
+        i += 1;
+    };
+    acc
+}
+
+// Reduce check for u288 (BN254).
+// Asserts: a(x) == r(x) + q(x) * p_BN254(x) + (2^96 - x) * c(x)  in the Stark field.
+// a(x) = sum_{i,j in 0..2} a[3*i+j] * x^(i+j)  (evaluates the outer-product array).
+// The identity holds at x = 2^96 by construction: (2^96 - 2^96)*c = 0, confirming a ≡ r mod p.
+pub fn reduce_to_u288(a: [felt252; 9], r: [u96; 3], q: [u96; 6], c: [u96; 6], x: felt252) {
+    let [a00, a01, a02, a10, a11, a12, a20, a21, a22] = a;
+    let x2 = x * x;
+    let x3 = x2 * x;
+    let x4 = x3 * x;
+    let a_val = a00
+        + (a01 + a10) * x
+        + (a02 + a11 + a20) * x2
+        + (a12 + a21) * x3
+        + a22 * x4;
+
+    let [r0, r1, r2] = r;
+    let r_val: felt252 = r0.into() + r1.into() * x + r2.into() * x2;
+
+    // BN254 prime in base 2^96: limb0 + limb1*x + limb2*x^2
+    let p_val: felt252 = 0x6871ca8d3c208c16d87cfd47
+        + 0xb85045b68181585d97816a91 * x
+        + 0x30644e72e131a029 * x2;
+
+    let [q0, q1, q2, q3, q4, q5] = q;
+    let x5 = x4 * x;
+    let q_val: felt252 = q0.into()
+        + q1.into() * x
+        + q2.into() * x2
+        + q3.into() * x3
+        + q4.into() * x4
+        + q5.into() * x5;
+
+    let [c0, c1, c2, c3, c4, c5] = c;
+    let c_val: felt252 = c0.into()
+        + c1.into() * x
+        + c2.into() * x2
+        + c3.into() * x3
+        + c4.into() * x4
+        + c5.into() * x5;
+
+    let b96: felt252 = 0x1000000000000000000000000; // 2^96
+    assert(a_val == r_val + q_val * p_val + (b96 - x) * c_val, 'REDUCE_U288_FAILED');
+}
+
+// Reduce check for u384 (BLS12-381).
+// Asserts: a(x) == r(x) + q(x) * p_BLS12_381(x) + (2^96 - x) * c(x)  in the Stark field.
+// a(x) = sum_{i,j in 0..3} a[4*i+j] * x^(i+j).
+pub fn reduce_to_u384(a: [felt252; 16], r: [u96; 4], q: [u96; 8], c: [u96; 8], x: felt252) {
+    let [a00, a01, a02, a03, a10, a11, a12, a13, a20, a21, a22, a23, a30, a31, a32, a33] = a;
+    let x2 = x * x;
+    let x3 = x2 * x;
+    let x4 = x3 * x;
+    let x5 = x4 * x;
+    let x6 = x5 * x;
+    let a_val = a00
+        + (a01 + a10) * x
+        + (a02 + a11 + a20) * x2
+        + (a03 + a12 + a21 + a30) * x3
+        + (a13 + a22 + a31) * x4
+        + (a23 + a32) * x5
+        + a33 * x6;
+
+    let [r0, r1, r2, r3] = r;
+    let r_val: felt252 = r0.into() + r1.into() * x + r2.into() * x2 + r3.into() * x3;
+
+    // BLS12-381 prime in base 2^96: limb0 + limb1*x + limb2*x^2 + limb3*x^3
+    let p_val: felt252 = 0xb153ffffb9feffffffffaaab
+        + 0x6730d2a0f6b0f6241eabfffe * x
+        + 0x434bacd764774b84f38512bf * x2
+        + 0x1a0111ea397fe69a4b1ba7b6 * x3;
+
+    let [q0, q1, q2, q3, q4, q5, q6, q7] = q;
+    let x7 = x6 * x;
+    let q_val: felt252 = q0.into()
+        + q1.into() * x
+        + q2.into() * x2
+        + q3.into() * x3
+        + q4.into() * x4
+        + q5.into() * x5
+        + q6.into() * x6
+        + q7.into() * x7;
+
+    let [c0, c1, c2, c3, c4, c5, c6, c7] = c;
+    let c_val: felt252 = c0.into()
+        + c1.into() * x
+        + c2.into() * x2
+        + c3.into() * x3
+        + c4.into() * x4
+        + c5.into() * x5
+        + c6.into() * x6
+        + c7.into() * x7;
+
+    let b96: felt252 = 0x1000000000000000000000000; // 2^96
+    assert(a_val == r_val + q_val * p_val + (b96 - x) * c_val, 'REDUCE_U384_FAILED');
 }
